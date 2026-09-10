@@ -1,3 +1,9 @@
+# Personal
+docs/local/
+datasets
+scripts
+.claude/
+
 # Logs
 logs
 *.log

@@ -1,0 +1,30 @@
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Docker container names come with a leading slash (e.g. "/ai-ticket-triage-api-api-1").
+// This strips it and exposes it as a "service_name" label, so you can filter
+// logs in Grafana by container name instead of by raw container id.
+discovery.relabel "logs_docker" {
+  targets = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "service_name"
+  }
+}
+
+loki.source.docker "default" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.docker.containers.targets
+  labels        = {"platform" = "docker"}
+  relabel_rules = discovery.relabel.logs_docker.rules
+  forward_to    = [loki.write.grafana_loki.receiver]
+}
+
+loki.write "grafana_loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
